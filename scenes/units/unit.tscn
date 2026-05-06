@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/characters/unit_placeholder.svg" id="2_tex"]
+[ext_resource type="Script" path="res://scripts/units/health_bar.gd" id="3_hbar"]
+[ext_resource type="Script" path="res://scripts/units/mana_bar.gd" id="4_mbar"]
+
+[node name="Unit" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_tex")
+offset = Vector2(0, -36)
+
+[node name="HealthBar" type="Node2D" parent="."]
+position = Vector2(0, -78)
+script = ExtResource("3_hbar")
+
+[node name="ManaBar" type="Node2D" parent="."]
+position = Vector2(0, -70)
+script = ExtResource("4_mbar")

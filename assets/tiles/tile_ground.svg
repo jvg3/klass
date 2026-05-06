@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64">
+  <!-- dark border -->
+  <polygon points="64,0 128,32 64,64 0,32" fill="#3a5728"/>
+  <!-- base surface -->
+  <polygon points="64,2 126,32 64,62 2,32" fill="#527a38"/>
+  <!-- left half lighter to suggest directional light -->
+  <polygon points="64,2 2,32 64,62" fill="#62904a"/>
+  <!-- subtle inner grid line -->
+  <polyline points="64,2 2,32" stroke="#6ba050" stroke-width="0.8" fill="none" opacity="0.6"/>
+  <polyline points="64,2 126,32" stroke="#3d6630" stroke-width="0.8" fill="none" opacity="0.6"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="72">
+  <!-- feet -->
+  <ellipse cx="17" cy="65" rx="8" ry="5" fill="#1a3a6b"/>
+  <ellipse cx="31" cy="65" rx="8" ry="5" fill="#1a3a6b"/>
+  <!-- body -->
+  <rect x="13" y="27" width="22" height="30" rx="4" fill="#2a5fb5"/>
+  <!-- waist -->
+  <rect x="13" y="43" width="22" height="3" rx="1" fill="#1a3a6b" opacity="0.5"/>
+  <!-- head -->
+  <circle cx="24" cy="15" r="11" fill="#3d7ad4"/>
+  <!-- head highlight -->
+  <circle cx="20" cy="11" r="4" fill="#6aaaf0" opacity="0.5"/>
+</svg>

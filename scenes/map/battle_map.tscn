@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/map/battle_map.gd" id="1_script"]
+[ext_resource type="TileSet" path="res://assets/tiles/tileset.tres" id="2_tileset"]
+[ext_resource type="Script" path="res://scripts/map/move_range_display.gd" id="3_range"]
+
+[node name="BattleMap" type="Node2D"]
+script = ExtResource("1_script")
+map_width = 8
+map_height = 8
+
+[node name="TileMapLayer" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+y_sort_enabled = true
+
+[node name="MoveRangeDisplay" type="Node2D" parent="."]
+script = ExtResource("3_range")
+
+[node name="TileHighlight" type="Polygon2D" parent="."]
+color = Color(1, 0.95, 0.5, 0.35)
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)
+visible = false
