@@ -163,21 +163,23 @@ func _execute_current_skill() -> void:
 	var from: Vector2i = _active_unit.get(&"grid_cell")
 	var caster_team: int = _active_unit.get(&"team")
 	var targets: Array[Node2D] = []
+	var target_cells: Array[Vector2i] = []
 	for cell: Vector2i in _current_skill.get_affected_cells(from, _skill_dir):
 		if not is_in_bounds(cell):
 			continue
 		var target: Node2D = _units.get(cell)
 		if target and target.get(&"team") != caster_team:
 			targets.append(target)
+			target_cells.append(cell)
 	_current_skill.execute(_active_unit, targets)
-	for target in targets:
-		if target.get(&"health") <= 0:
-			_units.erase(target.get(&"grid_cell"))
-			target.queue_free()
-	_check_repopulation()
+	for i in targets.size():
+		if targets[i].get(&"health") <= 0:
+			_units.erase(target_cells[i])
+			targets[i].queue_free()
 	_mode = Mode.MOVE
 	_highlight.visible = false
 	_refresh_range()
+	_check_repopulation()
 	mode_changed.emit(_mode)
 
 
