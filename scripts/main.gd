@@ -1,10 +1,12 @@
 extends Node2D
 
-@onready var _battle_map: BattleMap   = $BattleMap
-@onready var _attack_btn: Button      = $HUD/AttackButton
-@onready var _skills_btn: Button      = $HUD/SkillsButton
-@onready var _skills_menu: SkillsMenu = $HUD/SkillsMenu
-@onready var _stat_panel: StatPanel   = $HUD/StatPanel
+@onready var _battle_map:      BattleMap      = $BattleMap
+@onready var _attack_btn:      Button         = $HUD/AttackButton
+@onready var _skills_btn:      Button         = $HUD/SkillsButton
+@onready var _skills_menu:     SkillsMenu     = $HUD/SkillsMenu
+@onready var _stat_panel:      StatPanel      = $HUD/StatPanel
+@onready var _promote_btn:     Button         = $HUD/PromoteButton
+@onready var _promotion_panel: PromotionPanel = $HUD/PromotionPanel
 
 
 func _ready() -> void:
@@ -15,6 +17,9 @@ func _ready() -> void:
 
 	_skills_btn.pressed.connect(_on_skills_pressed)
 	_skills_menu.skill_selected.connect(_on_skill_selected)
+
+	_promote_btn.pressed.connect(_on_promote_pressed)
+	_promotion_panel.class_chosen.connect(_on_class_chosen)
 
 
 func _on_mode_changed(mode: BattleMap.Mode) -> void:
@@ -36,3 +41,17 @@ func _on_skills_pressed() -> void:
 func _on_skill_selected(skill: Skill) -> void:
 	_skills_btn.text = "Skills"
 	_battle_map.start_skill(skill)
+
+
+func _on_promote_pressed() -> void:
+	var unit := _battle_map.get_active_unit()
+	var uc: UnitClass = unit.get(&"unit_class")
+	if not uc or uc.promotions.is_empty():
+		return
+	var pool := uc.promotions.duplicate()
+	pool.shuffle()
+	_promotion_panel.open(pool.slice(0, 2))
+
+
+func _on_class_chosen(new_class: Resource) -> void:
+	_battle_map.get_active_unit().set(&"unit_class", new_class)
