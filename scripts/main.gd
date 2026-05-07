@@ -1,10 +1,10 @@
 extends Node2D
 
-@onready var _battle_map: BattleMap  = $BattleMap
-@onready var _attack_btn: Button     = $HUD/AttackButton
-@onready var _skills_btn: Button     = $HUD/SkillsButton
+@onready var _battle_map: BattleMap   = $BattleMap
+@onready var _attack_btn: Button      = $HUD/AttackButton
+@onready var _skills_btn: Button      = $HUD/SkillsButton
 @onready var _skills_menu: SkillsMenu = $HUD/SkillsMenu
-@onready var _stat_panel: StatPanel  = $HUD/StatPanel
+@onready var _stat_panel: StatPanel   = $HUD/StatPanel
 
 
 func _ready() -> void:
@@ -18,7 +18,10 @@ func _ready() -> void:
 
 
 func _on_mode_changed(mode: BattleMap.Mode) -> void:
-	_attack_btn.text = "Cancel" if mode == BattleMap.Mode.ATTACK else "Attack"
+	_attack_btn.text = "Attack" if mode == BattleMap.Mode.MOVE else "Cancel"
+	if mode == BattleMap.Mode.MOVE:
+		_skills_btn.text = "Skills"
+		_skills_menu.close()
 
 
 func _on_skills_pressed() -> void:
@@ -30,6 +33,6 @@ func _on_skills_pressed() -> void:
 		_skills_btn.text = "Skills ▼"
 
 
-func _on_skill_selected(skill_name: String, _mp_cost: int) -> void:
+func _on_skill_selected(skill: Skill) -> void:
 	_skills_btn.text = "Skills"
-	print("Used skill: ", skill_name)  # TODO: execute skill
+	_battle_map.start_skill(skill)

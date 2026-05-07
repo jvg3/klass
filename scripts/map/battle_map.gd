@@ -1,18 +1,22 @@
 class_name BattleMap
 extends Node2D
 
-enum Mode { MOVE, ATTACK }
+enum Mode { MOVE, ATTACK, SKILL }
 
 signal mode_changed(new_mode: Mode)
 signal unit_hovered(unit: Node2D)
 signal unit_unhovered
 
-const UnitScene := preload("res://scenes/units/unit.tscn")
+const UnitScene  := preload("res://scenes/units/unit.tscn")
+const UnitClass  := preload("res://scripts/units/unit_class.gd")
+const _Skill     := preload("res://scripts/skills/skill.gd")
 
 const _MOVE_COLOR       := Color(0.3, 0.7, 1.0, 0.35)
 const _ATTACK_COLOR     := Color(1.0, 0.3, 0.3, 0.35)
+const _SKILL_COLOR      := Color(1.0, 0.6, 0.1, 0.40)
 const _MOVE_HIGHLIGHT   := Color(1.0, 0.95, 0.5, 0.35)
 const _ATTACK_HIGHLIGHT := Color(1.0, 0.3, 0.3, 0.45)
+const _SKILL_HIGHLIGHT  := Color(1.0, 0.65, 0.15, 0.5)
 
 @export var map_width: int = 8
 @export var map_height: int = 8
@@ -24,17 +28,20 @@ const _ATTACK_HIGHLIGHT := Color(1.0, 0.3, 0.3, 0.45)
 @onready var _range_display: Node2D = $MoveRangeDisplay
 
 var _grid: Dictionary = {}
-var _units: Dictionary = {}  # Vector2i -> Node2D
+var _units: Dictionary = {}
 var _active_unit: Node2D = null
 var _reachable: Dictionary = {}
 var _mode: Mode = Mode.MOVE
 var _hovered_unit: Node2D = null
+var _current_skill: _Skill = null
+var _skill_dir: Vector2i = Vector2i(1, 0)
 
 
 func _ready() -> void:
 	_build_default_map()
 	_center_camera()
 	_active_unit = UnitScene.instantiate()
+	_active_unit.set(&"unit_class", UnitClass.FIGHTER)
 	place_unit(_active_unit, Vector2i(2, 2))
 	var enemy := UnitScene.instantiate()
 	enemy.set(&"team", 1)
@@ -54,6 +61,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			else:
 				unit_unhovered.emit()
 
+		if _mode == Mode.SKILL:
+			var unit_cell: Vector2i = _active_unit.get(&"grid_cell")
+			var new_dir := _direction_to_cardinal(unit_cell, cell)
+			if new_dir != _skill_dir:
+				_skill_dir = new_dir
+				_update_skill_display(unit_cell)
+
 		if _reachable.has(cell):
 			_highlight.position = grid_to_world(cell)
 			_highlight.visible = true
@@ -67,14 +81,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if (event as InputEventMouseButton).button_index != MOUSE_BUTTON_LEFT:
 		return
-	var cell := world_to_grid(get_global_mouse_position())
-	if not _reachable.has(cell) or not _active_unit:
+
+	if not _active_unit:
 		return
+	var cell := world_to_grid(get_global_mouse_position())
 	match _mode:
 		Mode.MOVE:
-			move_unit(_active_unit, cell)
+			if _reachable.has(cell):
+				move_unit(_active_unit, cell)
 		Mode.ATTACK:
-			_resolve_attack(cell)
+			if _reachable.has(cell):
+				_resolve_attack(cell)
+		Mode.SKILL:
+			_execute_current_skill()
 
 
 func _build_default_map() -> void:
@@ -104,20 +123,27 @@ func _refresh_range() -> void:
 			cells = get_attack_cells(from, attack_range)
 			range_color = _ATTACK_COLOR
 			_highlight.color = _ATTACK_HIGHLIGHT
+		Mode.SKILL:
+			for cell: Vector2i in _current_skill.get_affected_cells(from, _skill_dir):
+				if is_in_bounds(cell):
+					cells.append(cell)
+			range_color = _SKILL_COLOR
+			_highlight.color = _SKILL_HIGHLIGHT
 	_reachable.clear()
 	for cell in cells:
 		_reachable[cell] = true
 	_range_display.show_range(cells, grid_to_world, range_color)
 
 
-func _get_targetable_cells(from: Vector2i, max_range: int) -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	var active_team: int = _active_unit.get(&"team")
-	for cell in get_attack_cells(from, max_range):
-		var occupant: Node2D = _units.get(cell)
-		if occupant and occupant.get(&"team") != active_team:
-			result.append(cell)
-	return result
+func _update_skill_display(from: Vector2i) -> void:
+	var cells: Array[Vector2i] = []
+	for cell: Vector2i in _current_skill.get_affected_cells(from, _skill_dir):
+		if is_in_bounds(cell):
+			cells.append(cell)
+	_reachable.clear()
+	for cell in cells:
+		_reachable[cell] = true
+	_range_display.show_range(cells, grid_to_world, _SKILL_COLOR)
 
 
 func _resolve_attack(cell: Vector2i) -> void:
@@ -129,7 +155,61 @@ func _resolve_attack(cell: Vector2i) -> void:
 	if target.get(&"health") <= 0:
 		_units.erase(cell)
 		target.queue_free()
+		_check_repopulation()
 	toggle_mode()
+
+
+func _execute_current_skill() -> void:
+	var from: Vector2i = _active_unit.get(&"grid_cell")
+	var caster_team: int = _active_unit.get(&"team")
+	var targets: Array[Node2D] = []
+	for cell: Vector2i in _current_skill.get_affected_cells(from, _skill_dir):
+		if not is_in_bounds(cell):
+			continue
+		var target: Node2D = _units.get(cell)
+		if target and target.get(&"team") != caster_team:
+			targets.append(target)
+	_current_skill.execute(_active_unit, targets)
+	for target in targets:
+		if target.get(&"health") <= 0:
+			_units.erase(target.get(&"grid_cell"))
+			target.queue_free()
+	_check_repopulation()
+	_mode = Mode.MOVE
+	_highlight.visible = false
+	_refresh_range()
+	mode_changed.emit(_mode)
+
+
+
+func _direction_to_cardinal(from: Vector2i, to: Vector2i) -> Vector2i:
+	var diff := to - from
+	if diff == Vector2i.ZERO:
+		return _skill_dir
+	var ax: int = diff.x if diff.x >= 0 else -diff.x
+	var ay: int = diff.y if diff.y >= 0 else -diff.y
+	if ax >= ay:
+		return Vector2i(1 if diff.x > 0 else -1, 0)
+	return Vector2i(0, 1 if diff.y > 0 else -1)
+
+
+func _check_repopulation() -> void:
+	for unit: Node2D in _units.values():
+		if unit.get(&"team") == 1:
+			return
+	_spawn_enemies(2)
+
+
+func _spawn_enemies(count: int) -> void:
+	var candidates: Array[Vector2i] = []
+	for cell: Vector2i in _grid.keys():
+		if not _units.has(cell):
+			candidates.append(cell)
+	candidates.shuffle()
+	for i in min(count, candidates.size()):
+		var enemy := UnitScene.instantiate()
+		enemy.set(&"team", 1)
+		place_unit(enemy, candidates[i])
 
 
 func toggle_mode() -> void:
@@ -141,6 +221,15 @@ func toggle_mode() -> void:
 
 func in_attack_mode() -> bool:
 	return _mode == Mode.ATTACK
+
+
+func start_skill(skill: _Skill) -> void:
+	_current_skill = skill
+	_skill_dir = Vector2i(1, 0)
+	_mode = Mode.SKILL
+	_highlight.visible = false
+	_refresh_range()
+	mode_changed.emit(_mode)
 
 
 func get_active_unit() -> Node2D:

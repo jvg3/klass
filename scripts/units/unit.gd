@@ -1,6 +1,8 @@
 class_name Unit
 extends Node2D
 
+@export var level: int = 1
+@export var unit_class: UnitClass = null
 @export var max_health: int = 100
 @export var max_mana: int = 30
 @export var strength: int = 10

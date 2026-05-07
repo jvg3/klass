@@ -2,6 +2,7 @@ class_name StatPanel
 extends PanelContainer
 
 var _values: Dictionary = {}
+var _title: Label
 
 
 func _ready() -> void:
@@ -13,10 +14,9 @@ func _ready() -> void:
 	var vbox := VBoxContainer.new()
 	margin.add_child(vbox)
 
-	var title := Label.new()
-	title.text = "Unit Stats"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
+	_title = Label.new()
+	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(_title)
 	vbox.add_child(HSeparator.new())
 
 	var grid := GridContainer.new()
@@ -24,7 +24,7 @@ func _ready() -> void:
 	grid.add_theme_constant_override("h_separation", 24)
 	vbox.add_child(grid)
 
-	for stat: String in ["HP", "STR", "DEX", "MP", "SPD"]:
+	for stat: String in ["LVL", "ELEM", "HP", "STR", "DEX", "MP", "SPD"]:
 		var key := Label.new()
 		key.text = stat
 		grid.add_child(key)
@@ -38,8 +38,13 @@ func _ready() -> void:
 
 
 func show_unit(unit: Node2D) -> void:
+	var uc: UnitClass = unit.get(&"unit_class")
+	_title.text = uc.display_name if uc else "Unit Stats"
 	var hp: int = unit.get(&"health")
 	var max_hp: int = unit.get(&"max_health")
+	_values["LVL"].text  = str(unit.get(&"level"))
+	var elem: Element = uc.element if uc else null
+	_values["ELEM"].text = elem.display_name if elem else "—"
 	_values["HP"].text  = "%d / %d" % [hp, max_hp]
 	_values["STR"].text = str(unit.get(&"strength"))
 	_values["DEX"].text = str(unit.get(&"dexterity"))

@@ -1,24 +1,22 @@
 class_name SkillsMenu
 extends PanelContainer
 
-signal skill_selected(skill_name: String, mp_cost: int)
+signal skill_selected(skill: Skill)
 
-const SKILLS := [
-	{"name": "Slam",   "mp_cost": 10},
-	{"name": "Charge", "mp_cost": 20},
-]
+const _SkillRegistry := preload("res://scripts/skills/skill_registry.gd")
 
+var _skills: Array = []
 var _buttons: Array[Button] = []
 
 
 func _ready() -> void:
+	_skills = _SkillRegistry.all()
 	var vbox := VBoxContainer.new()
 	add_child(vbox)
-	for skill: Dictionary in SKILLS:
+	for skill: Skill in _skills:
 		var btn := Button.new()
-		var mp_cost: int = skill["mp_cost"]
-		btn.text = "%s  (%d MP)" % [skill["name"], mp_cost]
-		btn.pressed.connect(_on_skill_pressed.bind(skill["name"] as String, mp_cost))
+		btn.text = "%s  (%d MP)" % [skill.display_name, skill.mp_cost]
+		btn.pressed.connect(_on_skill_pressed.bind(skill))
 		vbox.add_child(btn)
 		_buttons.append(btn)
 	hide()
@@ -27,7 +25,7 @@ func _ready() -> void:
 func open(unit: Node2D) -> void:
 	var mp: int = unit.get(&"mana")
 	for i: int in _buttons.size():
-		_buttons[i].disabled = mp < (SKILLS[i]["mp_cost"] as int)
+		_buttons[i].disabled = mp < (_skills[i] as Skill).mp_cost
 	show()
 
 
@@ -35,6 +33,6 @@ func close() -> void:
 	hide()
 
 
-func _on_skill_pressed(skill_name: String, mp_cost: int) -> void:
-	skill_selected.emit(skill_name, mp_cost)
+func _on_skill_pressed(skill: Skill) -> void:
+	skill_selected.emit(skill)
 	hide()
